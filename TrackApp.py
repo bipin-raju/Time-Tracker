@@ -1,89 +1,117 @@
-import wx
-import wx.adv
-from win32gui import GetWindowText, GetForegroundWindow
-from time import sleep, strftime, localtime
-from ctypes import windll, Structure, c_uint, sizeof, byref
- 
-class TaskBarApp(wx.Frame):
-    def __init__(self, parent, id, title):
-        wx.Frame.__init__(self, parent, -1, title, size = (1, 1), style=wx.FRAME_NO_TASKBAR|wx.NO_FULL_REPAINT_ON_RESIZE)
-        self.ICON_STATE = 1
-        self.ID_ICON_TIMER=wx.NewId()
-        self.tbicon = wx.adv.TaskBarIcon()
-        icon = wx.Icon('logon.ico', wx.BITMAP_TYPE_ICO)
-        self.tbicon.SetIcon(icon, 'Logging')
-        self.tbicon.Bind(wx.adv.EVT_TASKBAR_LEFT_DCLICK, self.OnTaskBarLeftDClick)
-        self.tbicon.Bind(wx.adv.EVT_TASKBAR_RIGHT_UP, self.OnTaskBarRightClick)
-        self.Bind(wx.EVT_TIMER, self.Log, id=self.ID_ICON_TIMER)
-        self.SetIconTimer()
-        self.Show(True)
-        self.lastInputInfo = self.LASTINPUTINFO()
-        self.lastInputInfo.cbSize = sizeof(self.lastInputInfo)
-        self.Write(self.Now()+"<|>__LOGGERSTART__<|>0\n")
- 
-    def OnTaskBarLeftDClick(self, evt):
-        if self.ICON_STATE == 0:
-            self.Write(self.Now()+"<|>__LOGGERUNPAUSE__<|>0\n")
-            self.StartIconTimer()
-            icon = wx.Icon('logon.ico', wx.BITMAP_TYPE_ICO)
-            self.tbicon.SetIcon(icon, 'Logging')
-            self.ICON_STATE = 1
-        else:
-            self.StopIconTimer()
-            self.Write(self.Now()+"<|>__LOGGERPAUSE__<|>0\n")
-            icon = wx.Icon('logoff.ico', wx.BITMAP_TYPE_ICO)
-            self.tbicon.SetIcon(icon, 'Not Logging')
-            self.ICON_STATE = 0
- 
-    def OnTaskBarRightClick(self, evt):
-        self.StopIconTimer()
-        self.Write(self.Now()+"<|>__LOGGERSTOP__<|>0\n")
-        self.tbicon.Destroy()
-        self.Close(True)
-        wx.GetApp().ProcessIdle()
-       
-    def SetIconTimer(self):
-        self.icontimer = wx.Timer(self, self.ID_ICON_TIMER)
-        self.icontimer.Start(10000)
- 
-    def StartIconTimer(self):
-        try:
-            self.icontimer.Start(10000)
-        except:
-            pass
- 
-    def StopIconTimer(self):
-        try:
-            self.icontimer.Stop()
-        except:
-            pass
- 
-    def Log(self, evt):
-        windll.user32.GetLastInputInfo(byref(self.lastInputInfo))
-        idleDelta = float(windll.kernel32.GetTickCount() - self.lastInputInfo.dwTime) / 1000
-        self.Write(self.Now()+"<|>"+GetWindowText(GetForegroundWindow())+"<|>"+str(idleDelta)+"\n")
- 
-    def Write(self, text):
-        f=open('log.tmp', 'a')
-        f.write (text)
-        f.close()
+import win32gui
+import time
+import psutil
+import win32process
+import psutil
+import uiautomation as auto
+import datetime
+from Activity import *
 
-    def Now(self):
-        return strftime("%Y-%m-%d %H:%M:%S", localtime())
- 
-    class LASTINPUTINFO(Structure):
-        _fields_ = [("cbSize", c_uint),("dwTime", c_uint)]
- 
-class MyApp(wx.App):
-    def OnInit(self):
-        frame = TaskBarApp(None, -1, ' ')
-        frame.Center(wx.BOTH)
-        frame.Show(False)
-        return True
- 
-def main():
-    app = MyApp(0)
-    app.MainLoop()
- 
-if __name__ == '__main__':
-    main()
+def get_site_from_url(url):    
+    string_list = url.split('/')
+    if "https:" in string_list:
+        return string_list[2]
+    else:
+        return string_list[0]
+
+
+def get_chrome_url():
+    window = win32gui.GetForegroundWindow()
+    chromeControl = auto.ControlFromHandle(window)
+    edit = chromeControl.EditControl()
+    url = edit.GetValuePattern().Value
+    if url is None:
+        return ""
+    else:
+        return get_site_from_url(url)
+
+def get_current_task(app_name, window_title):
+    if app_name == "msedge.exe":
+        task = get_chrome_url()   
+    elif app_name == "Code.exe":
+        project_name = window_title.split(' - ')
+        if(len(project_name) > 1):
+            task = project_name[1]
+        else:
+            task = project_name[0]
+    elif app_name == "cmd.exe":
+        task = ""     
+    else:
+        task = window_title
+    return task
+
+# try:
+first_run = True
+start_time = datetime.datetime.now()
+current_work = ""
+activity_entry = ""
+task_entry = ""
+activeList = AcitivyList([])
+
+try:
+    activeList.initialize_me()
+except Exception:
+    print('No json')
+
+while True:
+    time.sleep(5)
+    window_title        = win32gui.GetWindowText(win32gui.GetForegroundWindow())
+    pid                 = win32process.GetWindowThreadProcessId(win32gui.GetForegroundWindow())
+
+    try:        
+        process_name        = psutil.Process(pid[-1]).name()
+    except psutil.NoSuchProcess:
+        continue
+        # print("==> PID not found for : " + window_title)
+        # window_title        = win32gui.GetWindowText(win32gui.GetForegroundWindow())  
+        # pid                 = win32process.GetWindowThreadProcessId(win32gui.GetForegroundWindow())
+        # process_name        = psutil.Process(pid[-1]).name()
+
+    current_task        = get_current_task(process_name, window_title) 
+    current_activity    = process_name   
+
+    if current_activity not in current_work or current_task not in current_work:
+        current_work = current_activity + " \t\t<|> " + current_task
+        print(current_work)
+
+        if first_run:
+            first_run = False
+            #in order to find the run time of first app, need to wait till switch happens to next app
+            #therefore log activity_entry and task_entry instead of current_activity and current_task 
+        else:
+            end_time = datetime.datetime.now()
+            time_entry = TimeEntry(start_time, end_time)
+            # print(time_entry.total_time)
+            if(time_entry.total_time < datetime.timedelta(seconds=5)):
+                continue
+            task_enty = Task(task_entry, [time_entry])
+
+            activity_exists = False
+            for activity in activeList.activities:
+                if activity.app_name == activity_entry:
+                    activity_exists = True
+                    task_exists = False
+                    for task in activity.tasks:
+                        if task.task_name == task_entry:
+                            task_exists = True
+                            task.time_entries.append(time_entry)
+                            break
+                        
+                    if task_exists == False:
+                        activity.tasks.append(task_enty)
+
+            if not activity_exists:
+                activity = Activity(activity_entry, [task_enty])
+                activeList.activities.append(activity)
+            with open('activities.json', 'w') as json_file:
+                json.dump(activeList.serialize(), json_file,
+                            indent=4, sort_keys=True)
+                start_time = datetime.datetime.now()
+
+        activity_entry = current_activity
+        task_entry = current_task
+
+
+
+# except Exception:
+    # print("\n\n\n ==> Good bye then.")
