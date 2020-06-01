@@ -39,6 +39,7 @@ def get_current_task(app_name, window_title):
         task = ""     
     else:
         task = window_title
+        window_title.replace('*', '')
     return task
 
 # try:
