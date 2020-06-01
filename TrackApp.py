@@ -21,6 +21,7 @@ def get_chrome_url():
     edit = chromeControl.EditControl()
     url = edit.GetValuePattern().Value
     if url is None:
+
         return ""
     else:
         return get_site_from_url(url)
@@ -56,16 +57,14 @@ except Exception:
 while True:
     time.sleep(5)
     window_title        = win32gui.GetWindowText(win32gui.GetForegroundWindow())
-    pid                 = win32process.GetWindowThreadProcessId(win32gui.GetForegroundWindow())
+    pid                 = win32process.GetWindowThreadProcessId(win32gui.GetForegroundWindow())    
 
     try:        
-        process_name        = psutil.Process(pid[-1]).name()
-    except psutil.NoSuchProcess:
+        process_name        = psutil.Process(pid[-1]).name()        
+    except (psutil.NoSuchProcess, ValueError) as e:
+        print("Exception occured : " + e)
         continue
-        # print("==> PID not found for : " + window_title)
-        # window_title        = win32gui.GetWindowText(win32gui.GetForegroundWindow())  
-        # pid                 = win32process.GetWindowThreadProcessId(win32gui.GetForegroundWindow())
-        # process_name        = psutil.Process(pid[-1]).name()
+
 
     current_task        = get_current_task(process_name, window_title) 
     current_activity    = process_name   
