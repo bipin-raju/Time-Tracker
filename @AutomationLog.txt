@@ -1,1 +1,3 @@
 2020-05-28 18:48:11.567 TrackApp.py[22] get_chrome_url -> Find Control Timeout: {ControlType: EditControl}
+2020-06-01 12:59:46.682 TrackApp.py[22] get_chrome_url -> Find Control Timeout: {ControlType: EditControl}
+2020-06-03 13:01:21.074 TrackApp.py[24] get_chrome_url -> Find Control Timeout: {ControlType: EditControl}

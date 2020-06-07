@@ -102,10 +102,12 @@ class Task:
 
 class TimeEntry:
     def __init__(self, start_time, end_time):
-        self.start_time = start_time.replace(microsecond=0)
-        self.end_time = end_time.replace(microsecond=0)
+        # self.start_time = start_time.replace(microsecond=0)
+        # self.end_time = end_time.replace(microsecond=0)
         self.total_time = end_time - start_time
-
+        # self.total_time = datetime.datetime.combine(datetime.datetime.min,end_time) \
+        # - datetime.datetime.combine(datetime.datetime.min,start_time)
+                
     def serialize(self):
         return {
             'start_time' : self.start_time.strftime("%Y-%m-%d %H:%M:%S"),

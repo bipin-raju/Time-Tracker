@@ -1,0 +1,5 @@
+- Fetch only URL from browswer instead of the EditControl Value (fetching text from Find field)
+- Check if browser is in private mode and refrain from logging those tasks
+- Add DB and use vectorized functions and Dataframes for faster use of Data Logs
+- Do not log every web page. Instead log a webpage only if it is used for more than 10min. 
+    - How to store and retrieved the amount of time spent on a website without storing it in DB? JSON?

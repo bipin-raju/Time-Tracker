@@ -1,9 +1,9 @@
 import sqlite3
 from sqlite3 import Error
 
-class DBController:    
+class DataBaseAdapter:    
     def __init__(self):        
-        self.connection = self.create_connection("Data/")
+        self.connection = self.create_connection("Data/log.db")
 
 
     def create_connection(self, path):
@@ -21,7 +21,7 @@ class DBController:
         try:
             cursor.execute(query)
             self.connection.commit()
-            print("Query executed successfully")
+            # print("Query executed successfully")
         except Error as e:
             print(f"The error '{e}' occurred")
 
@@ -36,13 +36,24 @@ class DBController:
         except Error as e:
             print(f"The error '{e}' occurred")
 
+    ## SQL commands ###
+    create_todays_table = """
+    CREATE TABLE IF NOT EXISTS '{}' (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    app_name TEXT NOT NULL,
+    category INTEGER,
+    task_name TEXT,
+    start_time REAL,
+    end_time REAL,
+    total_time INTEGER
+    );
+    """
 
-create_todays_table = """
-CREATE TABLE IF NOT EXISTS tally_today (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  app_name TEXT NOT NULL,
-  category INTEGER,
-  task_name TEXT,
-  time INTEGER
-);
-"""
+    insert_activity = """
+    INSERT INTO
+    '{}' (app_name, category, task_name, start_time, end_time, total_time)
+    VALUES
+    ('{}', {}, '{}', julianday('{}'), julianday('{}'), {});
+    """
+
+    get_all_activities_from_today = "SELECT * from {}"
